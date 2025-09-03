@@ -1,15 +1,13 @@
 
 import matplotlib.pyplot as plt
+from pandas import DataFrame
 
-def plot_single_row(df):
+def plot_single_row(df:DataFrame):
     """
     Plots the values of a single-row DataFrame as a bar chart.
     """
-    if df.shape[0] != 1:
-        raise ValueError("DataFrame must have exactly one row.")
-    row = df.iloc[0]
-    plt.figure(figsize=(8, 4))
-    plt.bar(row.index, row.values)
+    plt.figure(figsize=(14, 4))
+    plt.plot(df["Index"], df["Data"])
     plt.xlabel('Columns')
     plt.ylabel('Values')
     plt.title('Single Row DataFrame Plot')
