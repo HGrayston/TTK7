@@ -1,11 +1,10 @@
-import math
-
-import matplotlib.pyplot as plt
 import numpy as np
-from PyEMD import EMD
+import matplotlib.pyplot as plt
 from scipy.signal import hilbert, stft
 from ssqueezepy import cwt
 from tftb.processing import WignerVilleDistribution
+import math
+from PyEMD import EMD
 
 
 class SignalAnalyzer:
@@ -17,9 +16,7 @@ class SignalAnalyzer:
         analytic_signal = hilbert(signal)
         amplitude_envelope = np.abs(analytic_signal)
         instantaneous_phase = np.unwrap(np.angle(analytic_signal))
-        instantaneous_frequency = np.diff(instantaneous_phase) / (
-            2.0 * np.pi
-        )  # cycles/sample
+        instantaneous_frequency = np.diff(instantaneous_phase) / (2.0 * np.pi)  # cycles/sample
 
         if fs is not None:
             instantaneous_frequency = instantaneous_frequency * fs
@@ -39,7 +36,7 @@ class SignalAnalyzer:
         signal = np.asarray(signal)
         n = len(signal)
         spectrum = np.fft.fft(signal)
-        freq = np.fft.fftfreq(n, d=(1.0 / fs) if fs else 1.0)
+        freq = np.fft.fftfreq(n, d=(1.0/fs) if fs else 1.0)
         spectrum = np.fft.fftshift(spectrum)
         freq = np.fft.fftshift(freq)
         return {"type": "FFT", "frequency": freq, "spectrum": spectrum, "fs": fs}
@@ -75,7 +72,7 @@ class SignalAnalyzer:
             imfs = imfs[np.newaxis, :]
 
         T = signal.shape[0]
-        time = np.arange(T) if fs is None else np.arange(T) / fs
+        time = np.arange(T) if fs is None else np.arange(T)/fs
 
         all_if = []
         all_amp = []
@@ -83,7 +80,7 @@ class SignalAnalyzer:
             analytic = hilbert(imf)
             amp = np.abs(analytic)
             phase = np.unwrap(np.angle(analytic))
-            ifreq = np.diff(phase) / (2.0 * np.pi)
+            ifreq = np.diff(phase) / (2.0*np.pi)
             if fs is not None:
                 ifreq = ifreq * fs
             all_if.append(ifreq)
@@ -123,46 +120,28 @@ class SignalAnalyzer:
             ax.plot(results["instantaneous_frequency"])
             ax.set_title("Hilbert Instantaneous Frequency")
             ax.set_xlabel("Time [samples]")
-            ax.set_ylabel(
-                "Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample")
-            )
+            ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
 
         elif results["type"] == "HS":
-            ax.pcolormesh(
-                results["time"],
-                results["freqs"],
-                results["Z"],
-                shading="auto",
-                cmap="jet",
-            )
+            ax.pcolormesh(results["time"], results["freqs"], results["Z"], shading="auto", cmap="jet")
             ax.set_title("Hilbert Spectrum (HHT)")
             ax.set_xlabel("Time [{}]".format("s" if results.get("fs") else "samples"))
-            ax.set_ylabel(
-                "Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample")
-            )
+            ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
 
         elif results["type"] == "FFT":
             ax.plot(results["frequency"], np.abs(results["spectrum"]))
             ax.set_title("FFT Spectrum")
-            ax.set_xlabel(
-                "Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample")
-            )
+            ax.set_xlabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
             ax.set_ylabel("Amplitude")
 
         elif results["type"] == "STFT":
-            ax.pcolormesh(
-                results["t"], results["f"], np.abs(results["Zxx"]), shading="gouraud"
-            )
+            ax.pcolormesh(results["t"], results["f"], np.abs(results["Zxx"]), shading="gouraud")
             ax.set_title("STFT Spectrogram")
             ax.set_xlabel("Time [{}]".format("s" if results.get("fs") else "samples"))
-            ax.set_ylabel(
-                "Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample")
-            )
+            ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
 
         elif results["type"] == "WVT":
-            ax.pcolormesh(
-                results["t"], results["f"], np.abs(results["tfr"].T), shading="auto"
-            )
+            ax.pcolormesh(results["t"], results["f"], np.abs(results["tfr"].T), shading="auto")
             ax.set_title("Wigner-Ville Transform")
             ax.set_xlabel("Time")
             ax.set_ylabel("Frequency")
@@ -170,15 +149,8 @@ class SignalAnalyzer:
         elif results["type"] == "WT":
             ax.imshow(
                 np.abs(results["coefficients"]),
-                extent=[
-                    0,
-                    len(signal),
-                    results["scales"].min(),
-                    results["scales"].max(),
-                ],
-                cmap="jet",
-                aspect="auto",
-                origin="lower",
+                extent=[0, len(signal), results["scales"].min(), results["scales"].max()],
+                cmap="jet", aspect="auto", origin="lower"
             )
             ax.set_title("Wavelet Transform (CWT)")
             ax.set_xlabel("Time")
@@ -196,19 +168,25 @@ class SignalAnalyzer:
             plt.show()
 
     @staticmethod
-    def plot_all(signal, results_list, width=16, height=12):
+    def plot_all(signal, results_list, width=16, height=12, spectrum=False):
         expanded = []
         for res in results_list:
             expanded.append(res)
             if isinstance(res, dict) and res.get("type") == "HT":
-                expanded.append(
-                    SignalAnalyzer.hilbert_spectrum(
-                        signal, fs=res.get("fs"), n_bins=res.get("n_bins", 256)
+                if spectrum:
+                    expanded.append(
+                        SignalAnalyzer.hilbert_spectrum(signal, fs=res.get("fs"), n_bins=res.get("n_bins", 256))
                     )
-                )
-
+                else:
+                    expanded.append(
+                        {
+                            "type": "HT_IF",
+                            "instantaneous_frequency": res["instantaneous_frequency"],
+                            "fs": res.get("fs"),
+                        }
+                    )
         n = len(expanded)
-        rows = math.ceil(n / 2)
+        rows = math.ceil(n/2)
         cols = 2
         fig, axes = plt.subplots(rows, cols, figsize=(width, height))
         axes = np.atleast_1d(axes).ravel()
