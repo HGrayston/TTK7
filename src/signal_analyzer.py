@@ -168,15 +168,23 @@ class SignalAnalyzer:
             plt.show()
 
     @staticmethod
-    def plot_all(signal, results_list, width=16, height=12):
+    def plot_all(signal, results_list, width=16, height=12, spectrum=False):
         expanded = []
         for res in results_list:
             expanded.append(res)
             if isinstance(res, dict) and res.get("type") == "HT":
-                expanded.append(
-                    SignalAnalyzer.hilbert_spectrum(signal, fs=res.get("fs"), n_bins=res.get("n_bins", 256))
-                )
-
+                if spectrum:
+                    expanded.append(
+                        SignalAnalyzer.hilbert_spectrum(signal, fs=res.get("fs"), n_bins=res.get("n_bins", 256))
+                    )
+                else:
+                    expanded.append(
+                        {
+                            "type": "HT_IF",
+                            "instantaneous_frequency": res["instantaneous_frequency"],
+                            "fs": res.get("fs"),
+                        }
+                    )
         n = len(expanded)
         rows = math.ceil(n/2)
         cols = 2
