@@ -59,7 +59,15 @@ class SignalAnalyzer:
     def wt_transform(signal, wavelet="morlet", fs=None):
         signal = np.asarray(signal)
         Wx, scales = cwt(signal, wavelet=wavelet)
-        return {"type": "WT", "coefficients": Wx, "scales": scales, "fs": fs}
+        # Convert scales to frequencies
+        if fs is not None:
+            # For Morlet, frequency = fs * center_frequency / scale
+            # ssqueezepy uses center_frequency=1 by default for Morlet
+            center_frequency = 1.0
+            freqs = fs * center_frequency / scales
+        else:
+            freqs = 1.0 / scales
+        return {"type": "WT", "coefficients": Wx, "scales": scales, "freqs": freqs, "fs": fs}
 
     # ---------------- Hilbert Spectrum via PyEMD ----------------
     @staticmethod
@@ -149,12 +157,12 @@ class SignalAnalyzer:
         elif results["type"] == "WT":
             ax.imshow(
                 np.abs(results["coefficients"]),
-                extent=[0, len(signal), results["scales"].min(), results["scales"].max()],
+                extent=[0, len(signal), results["freqs"].min(), results["freqs"].max()],
                 cmap="jet", aspect="auto", origin="lower"
             )
             ax.set_title("Wavelet Transform (CWT)")
             ax.set_xlabel("Time")
-            ax.set_ylabel("Scale")
+            ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
 
         elif results["type"] == "Original":
             ax.plot(signal)
