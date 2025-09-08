@@ -35,11 +35,17 @@ class SignalAnalyzer:
     def fft_transform(signal, fs=None):
         signal = np.asarray(signal)
         n = len(signal)
-        spectrum = np.fft.fft(signal)
-        freq = np.fft.fftfreq(n, d=(1.0/fs) if fs else 1.0)
-        spectrum = np.fft.fftshift(spectrum)
-        freq = np.fft.fftshift(freq)
-        return {"type": "FFT", "frequency": freq, "spectrum": spectrum, "fs": fs}
+
+        # FFT (kun positive frekvenser)
+        spectrum = np.fft.rfft(signal)
+        freq = np.fft.rfftfreq(n, d=(1.0/fs) if fs else 1.0)
+
+        return {
+            "type": "FFT",
+            "frequency": freq,
+            "spectrum": spectrum,
+            "fs": fs
+        }
 
     @staticmethod
     def stft_transform(signal, fs=None, nperseg=256):
