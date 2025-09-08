@@ -111,6 +111,16 @@ if mask_sig == 1:
     mask3 = mmode10
     mask4 = 0.7 * np.sin(2 * np.pi * 9 * t1)
 
+    new_final_signal = modes + mask1 + mask2 + mask3 + mask4
+
+    # Save new_final_signal to CSV
+    output_path = Path(__file__).parent
+    output_path.mkdir(parents=True, exist_ok=True)
+    csv_file = output_path / f"{filecase}new_final_signal.csv"
+    with open(csv_file, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(new_final_signal)
+
 else:
     # No mask signal
     mfilt = 0.0 * np.sin(2 * np.pi * 28 * t1)
@@ -122,8 +132,8 @@ else:
 # End
 
 plt.title("Signal to be decomposed - red / mask - green ", fontsize=20)
-plt.plot(t, mask1, "r")
-plt.plot(t, mfilt, "g")
+plt.plot(t, modes, "r")
+plt.plot(t, new_final_signal, "g")
 plt.grid()
 mng = plt.get_current_fig_manager()
 mng.window.state("zoomed")
