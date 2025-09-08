@@ -55,11 +55,17 @@ class SignalAnalyzer:
         return {"type": "STFT", "f": f, "t": t, "Zxx": Zxx, "fs": fs_eff}
 
     @staticmethod
-    def wvt_transform(signal, timestamps=None):
+    def wvt_transform(signal, fs=100, timestamps=None):
         signal = np.asarray(signal)
         wvd = WignerVilleDistribution(signal, timestamps=timestamps)
         tfr, t, f = wvd.run()
-        return {"type": "WVT", "tfr": tfr, "t": t, "f": f}
+
+        if fs is not None:
+            t = t / fs     # sekunder i stedet for samples
+            f = f * fs     # Hz i stedet for cycles/sample
+
+        return {"type": "WVT", "tfr": tfr, "t": t, "f": f, "fs": fs}
+
 
     @staticmethod
     def wt_transform(signal, wavelet="morlet", fs=None):
@@ -163,7 +169,8 @@ class SignalAnalyzer:
         elif results["type"] == "WT":
             ax.imshow(
                 np.abs(results["coefficients"]),
-                extent=[0, len(signal), results["freqs"].min(), results["freqs"].max()],
+                extent=[0, len(signal)/results["fs"] if results.get("fs") else len(signal),
+                results["freqs"].min(), results["freqs"].max()],
                 cmap="jet", aspect="auto", origin="lower"
             )
             ax.set_title("Wavelet Transform (CWT)")
