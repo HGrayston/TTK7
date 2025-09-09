@@ -9,6 +9,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "matplotlib>=3.10.6",
     "pandas>=2.3.2",
+    "pywavelets>=1.9.0",
     "scikit-learn>=1.7.1",
     "ssqueezepy>=0.6.6",
     "tftb>=0.2.0",

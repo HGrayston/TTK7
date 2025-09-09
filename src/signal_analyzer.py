@@ -5,6 +5,7 @@ from ssqueezepy import cwt
 from tftb.processing import WignerVilleDistribution
 import math
 from PyEMD import EMD
+import pywt
 
 
 class SignalAnalyzer:
@@ -59,6 +60,7 @@ class SignalAnalyzer:
         signal = np.asarray(signal)
         wvd = WignerVilleDistribution(signal, timestamps=timestamps)
         tfr, t, f = wvd.run()
+        tfr = np.abs(tfr) / np.max(np.abs(tfr))
 
         if fs is not None:
             t = t / fs     # sekunder i stedet for samples
@@ -66,20 +68,26 @@ class SignalAnalyzer:
 
         return {"type": "WVT", "tfr": tfr, "t": t, "f": f, "fs": fs}
 
-
     @staticmethod
-    def wt_transform(signal, wavelet="morlet", fs=None):
-        signal = np.asarray(signal)
-        Wx, scales = cwt(signal, wavelet=wavelet)
-        # Convert scales to frequencies
-        if fs is not None:
-            # For Morlet, frequency = fs * center_frequency / scale
-            # ssqueezepy uses center_frequency=1 by default for Morlet
-            center_frequency = 1.0
-            freqs = fs * center_frequency / scales
-        else:
-            freqs = 1.0 / scales
-        return {"type": "WT", "coefficients": Wx, "scales": scales, "freqs": freqs, "fs": fs}
+    def wt_transform(signal, wavelet="cmor1.5-1.0", fs=None, n_freqs=128):
+            signal = np.asarray(signal)
+            if fs is None:
+                raise ValueError("fs må settes for å bruke pywt.cwt")
+
+            # Sett frekvensaksen (0–Nyquist)
+            freqs = np.linspace(1, fs/2, n_freqs)
+            fc = pywt.central_frequency(wavelet)
+            scales = fc * fs / freqs
+
+            # Kjør CWT
+            Wx, _ = pywt.cwt(signal, scales, wavelet, sampling_period=1/fs)
+
+            return {
+                "type": "WT",
+                "coefficients": Wx,
+                "freqs": freqs,
+                "fs": fs
+            }
 
     # ---------------- Hilbert Spectrum via PyEMD ----------------
     @staticmethod
@@ -167,15 +175,15 @@ class SignalAnalyzer:
             ax.set_ylabel("Frequency")
 
         elif results["type"] == "WT":
-            ax.imshow(
-                np.abs(results["coefficients"]),
-                extent=[0, len(signal)/results["fs"] if results.get("fs") else len(signal),
-                results["freqs"].min(), results["freqs"].max()],
-                cmap="jet", aspect="auto", origin="lower"
-            )
+            Wx = np.abs(results["coefficients"])
+            freqs = results["freqs"]
+            fs = results["fs"]
+
+            T = np.arange(Wx.shape[1]) / fs
+            pc = ax.pcolormesh(T, freqs, Wx, shading="auto", cmap="jet")
             ax.set_title("Wavelet Transform (CWT)")
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
+            ax.set_xlabel("Time [s]")
+            ax.set_ylabel("Frequency [Hz]")
 
         elif results["type"] == "Original":
             ax.plot(signal)
