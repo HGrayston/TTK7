@@ -161,7 +161,7 @@ class SignalAnalyzer:
             ax.set_ylabel("Frequency [{}]".format("Hz" if results.get("fs") else "cycles/sample"))
 
         elif results["type"] == "WVT":
-            ax.pcolormesh(results["t"], results["f"], np.abs(results["tfr"].T), shading="auto")
+            ax.pcolormesh(results["t"], results["f"], np.abs(results["tfr"]), shading="auto")
             ax.set_title("Wigner-Ville Transform")
             ax.set_xlabel("Time")
             ax.set_ylabel("Frequency")
